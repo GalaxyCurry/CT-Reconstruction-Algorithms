@@ -1,4 +1,4 @@
-# MRI-Reconstruction-Algorithms
+# CT-Reconstruction-Algorithms
 
 This repository contains implementations of several common MRI reconstruction algorithms. The goal is to reproduce these algorithms and make the code available to help researchers and students.
 
