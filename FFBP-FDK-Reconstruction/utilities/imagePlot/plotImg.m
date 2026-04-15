@@ -1,0 +1,191 @@
+function plotImg(img,varargin)
+% PLOTIMG plots a 3D image in slices
+%   PLOTIMG(IMG) plots 3D image IMG looping through X axis (first
+%   dimension)
+%   PLOTIMG(IMG,OPT,VAL,...) uses options and values for plotting. The
+%   possible options in OPT are:
+%
+%   'Step':     Sets the step size between slice and slice. Step is 1 by
+%               default.
+%   'Dim':      Sets the dimensions in which the function iterates through.
+%               Default is 1 or 'X', possibilities are 2,3 or 'Y','Z' 
+%               respectively. 
+%   'Colormap': Sets the colormap. Possible values for VAL are the names of
+%               the standard MATLAB colormaps, the names in the perceptually 
+%               uniform colormaps tool or a custom colormap, being this last 
+%               one a 3xN matrix. Default is GRAY
+%   'Clims':    a 2x1 matrix setting the upper and lower limits of the
+%               colors. The default computes the lower and upper percentile
+%               of data, in 1% and 99% and sets the limits to that.
+%   'Slice'     Plots a single slice of the data. Overwrites Step.
+%--------------------------------------------------------------------------
+
+%% Parse inputs
+
+opts=     {'step','dim','colormap','clims','slice'};
+defaults= [   1  ,  1  ,   1   ,   1 ,  1];
+
+% Check inputs
+nVarargs = length(varargin);
+if mod(nVarargs,2)
+    error('CBCT:plotImg:InvalidInput','Invalid number of inputs')
+end
+
+% check if option has been passed as input
+for ii=1:2:nVarargs
+    ind=find(ismember(opts,lower(varargin{ii})));
+    if ~isempty(ind)
+       defaults(ind)=0; 
+    else
+       error('CBCT:plotImg:InvalidInput',['Optional parameter "' varargin{ii} '" does not exist' ]); 
+    end
+end
+
+for ii=1:length(opts)
+    opt=opts{ii};
+    default=defaults(ii);
+    % if one option isnot default, then extranc value from input
+    if default==0
+        ind=double.empty(0,1);jj=1;
+        while isempty(ind)
+            ind=find(isequal(opt,lower(varargin{jj})));
+            jj=jj+1;
+        end
+        if isempty(ind)
+           error('CBCT:plotImgs:InvalidInput',['Optional parameter "' varargin{jj} '" does not exist' ]); 
+        end
+        val=varargin{jj};
+    end
+    
+    switch opt
+% % % % % %         %Step 
+        case 'step'
+            if default
+                steps=1;
+            else
+                if ~isnumeric(val)
+                    error('CBCT:plotImgs:InvalidInput','Invalid step')
+                end
+                steps=val;
+            end
+% % % % % %         % Plot single slice
+         case 'slice'
+            if default
+                slice=0;
+            else
+                slice=val;
+            end
+
+% % % % % %         % iterate trhoug what dim?
+        case 'dim'
+            if default
+                crossect=1;
+            else
+                if length(val)>1  
+                    error('CBCT:plotImgs:InvalidInput','Invalid Dim')
+                end
+                
+                if val==3 || lower(val)=='z'
+                    crossect=3;
+                end
+                if val==2 || lower(val)=='y'
+                    crossect=2;
+                end
+                if val==1 || lower(val)=='x'
+                    crossect=1;
+                end
+            end
+% % % % % %         % Colormap choice
+        case 'colormap'
+            if default
+                cmap='gray';
+            else
+                
+                if ~isnumeric(val)  
+                    % check if it is from perceptually uniform colormaps.
+                    if ismember(val,{'magma','viridis','plasma','inferno'})
+                        cmap=eval([val,'()']);
+                    else
+                        cmap=val;
+                    end                   
+                else
+                    % if it is a custom colormap
+                    if size(val,2)~=3
+                        error('CBCT:plotImgs:InvalidInput','Invalid size of colormap')
+                    end
+                    cmap=val;
+                end
+            end
+% % % % % %         % Limits of the colors
+        case 'clims'
+            if default
+                if any(size(img)>512) || ~areTheseToolboxesInstalled({'MATLAB','Statistics Toolbox'})  || areTheseToolboxesInstalled({'MATLAB','Statistics and Machine Learning Toolbox'})
+                   climits=[0, 0.95*max(img(:))];
+                else
+                   climits=prctile(double(img(:)),[1 99]);
+                end
+            else
+                if min(size(val))==1 && max(size(val))==2
+                    climits=val;
+                else
+                    error('CBCT:plotImgs:InvalidInput','Invalid size of Clims')
+                end
+            end
+            
+        otherwise
+          error('CBCT:plotImgs:InvalidInput',['Invalid input name:', num2str(opt),'\n No such option in plotImg()']);
+    end
+end
+
+
+
+%% Do the plotting!
+
+fh=figure();
+
+if slice
+    list=slice;
+else 
+    list=1:steps:size(img,crossect);
+end
+for ii=list
+    
+    if crossect==1
+      imagesc(squeeze(img(ii,:,:)).'); 
+    else if crossect==2
+             imagesc(squeeze(img(:,ii,:)).');
+        else
+             imagesc(squeeze(img(:,:,ii)));
+        end
+    end
+    axis image; 
+    axis equal; 
+    
+    colormap(cmap); 
+    colorbar; 
+    clim([climits(1),climits(2)]);
+    set(gca,'XTick',[]);
+    set(gca,'YTick',[]);
+    set(gca,'YDir','normal');
+    
+    
+    if crossect==3 
+        xlabel('->Y');
+        ylabel('->X');
+        title(['Bottom to top->Z : ',num2str(ii)]);
+    end
+     if crossect==2 
+        xlabel('->X');
+        ylabel('->Z');
+        title(['Left to Rigth direction ->Y : ',num2str(ii)]);
+    end
+    if crossect==1 
+        xlabel('->Y');
+        ylabel('->Z');
+        title(['Detector to Source direction ->X : ',num2str(ii)]);
+    end
+    drawnow update 
+    pause(0.01)
+    
+end
+
