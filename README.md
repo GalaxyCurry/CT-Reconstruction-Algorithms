@@ -10,7 +10,7 @@ The repository is organized into three main folders, with detailed division as f
 - **Filtered_Back_Projection(FBP)** 🔍
   Focuses on 2D image reconstruction, including 2D reconstruction algorithms for parallel beam and fan beam, corresponding to the related content in the Algorithms section.
 ## Algorithms 🧩
-- Fan Beam 📡
+- Fan Beam 、Parallel beam 📡 
   - Filtered Back Projection (FBP) 🔍
 - Cone Beam 🛰️
   - Feldkamp-Davis-Kress (FDK) 🧮
